@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Real-Time Updates</title>
+    <title>Real-Time Updates</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
     <style>
         body {
@@ -34,26 +34,38 @@
     <div id="updates"></div>
 
     <script>
-        (function() {
-            var socket = io(window.location.origin);
+    (function(){
+        var socketManager = (function(){
+            var s = io.connect(window.location.origin);
             var updatesContainer = document.getElementById('updates');
             var connectionStatus = document.getElementById('connection-status');
 
-            socket.on('connect', function() {
+            function disconnect(){
+                s.disconnect();
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.style.color = 'red';
+                
+                var reconnectButton = document.createElement('button');
+                reconnectButton.textContent = 'Reconnect';
+                reconnectButton.onclick = function() {
+                    s.connect();
+                    connectionStatus.textContent = 'Reconnecting...';
+                    connectionStatus.style.color = 'orange';
+                    connectionStatus.removeChild(reconnectButton);
+                };
+                connectionStatus.appendChild(reconnectButton);
+            }
+
+            s.on('connect', function() {
                 connectionStatus.textContent = 'Connected';
                 connectionStatus.style.color = 'green';
             });
 
-            socket.on('disconnect', function() {
-                connectionStatus.textContent = 'Disconnected';
-                connectionStatus.style.color = 'red';
-            });
-
-            socket.on('data', function(data) {
+            s.on('data', function (data) {
                 if (!Array.isArray(data)) {
                     data = [data];
                 }
-                data.forEach(function(item) {
+                data.forEach(function(item){
                     var updateElement = document.createElement('div');
                     updateElement.className = 'update-item';
                     updateElement.textContent = JSON.stringify(item);
@@ -61,12 +73,15 @@
                 });
             });
 
-            socket.on('closing', function() {
-                socket.disconnect();
-                connectionStatus.textContent = 'Server closed connection';
-                connectionStatus.style.color = 'orange';
-            });
-        })();
+            s.on('closing', disconnect);
+
+            return {
+                disconnect: disconnect
+            };
+        }());
+
+        // You can use socketManager.disconnect() to manually disconnect if needed
+    })();
     </script>
 </body>
 </html>
