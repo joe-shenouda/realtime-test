@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Real-Time Updates</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #updates {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .update-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Updates</h1>
+    <div id="connection-status">Connecting...</div>
+    <div id="updates"></div>
+
+    <script>
+        (function() {
+            var socket = io(window.location.origin);
+            var updatesContainer = document.getElementById('updates');
+            var connectionStatus = document.getElementById('connection-status');
+
+            socket.on('connect', function() {
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.style.color = 'green';
+            });
+
+            socket.on('disconnect', function() {
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.style.color = 'red';
+            });
+
+            socket.on('data', function(data) {
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+                data.forEach(function(item) {
+                    var updateElement = document.createElement('div');
+                    updateElement.className = 'update-item';
+                    updateElement.textContent = JSON.stringify(item);
+                    updatesContainer.insertBefore(updateElement, updatesContainer.firstChild);
+                });
+            });
+
+            socket.on('closing', function() {
+                socket.disconnect();
+                connectionStatus.textContent = 'Server closed connection';
+                connectionStatus.style.color = 'orange';
+            });
+        })();
+    </script>
+</body>
+</html>
